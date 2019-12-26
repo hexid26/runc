@@ -267,19 +267,23 @@ type runner struct {
 }
 
 func (r *runner) run(config *specs.Process) (int, error) {
+	// ! Begin to run a terminal in docker
 	if err := r.checkTerminal(config); err != nil {
 		r.destroy()
 		return -1, err
 	}
-	process, err := newProcess(*config, r.init)
+	proce	logrus.Debug("haixiang::utils_linux.go Terminal true")
+ss, err := newProcess(*config, r.init)
 	if err != nil {
 		r.destroy()
 		return -1, err
 	}
+	proce	logrus.Debug("haixiang::utils_linux.go err")
 	if len(r.listenFDs) > 0 {
 		process.Env = append(process.Env, fmt.Sprintf("LISTEN_FDS=%d", len(r.listenFDs)), "LISTEN_PID=1")
 		process.ExtraFiles = append(process.ExtraFiles, r.listenFDs...)
 	}
+	proce	logrus.Debug("haixiang::utils_linux.go get Env ExtraFiles from listenFDs")
 	baseFd := 3 + len(process.ExtraFiles)
 	for i := baseFd; i < baseFd+r.preserveFDs; i++ {
 		_, err := os.Stat(fmt.Sprintf("/proc/self/fd/%d", i))
@@ -289,54 +293,64 @@ func (r *runner) run(config *specs.Process) (int, error) {
 		}
 		process.ExtraFiles = append(process.ExtraFiles, os.NewFile(uintptr(i), "PreserveFD:"+strconv.Itoa(i)))
 	}
+	proce	logrus.Debug("haixiang::utils_linux.go get create ExtraFiles successfully")
 	rootuid, err := r.container.Config().HostRootUID()
 	if err != nil {
 		r.destroy()
 		return -1, err
 	}
+	proce	logrus.Debug("haixiang::utils_linux.go get root uid successfully")
 	rootgid, err := r.container.Config().HostRootGID()
 	if err != nil {
 		r.destroy()
 		return -1, err
 	}
+	proce	logrus.Debug("haixiang::utils_linux.go get root gid successfully")
 	var (
 		detach = r.detach || (r.action == CT_ACT_CREATE)
 	)
-	// Setting up IO is a two stage process. We need to modify process to deal
-	// with detaching containers, and then we get a tty after the container has
-	// started.
+	// ! Setting up IO is a two stage process. We need to modify process to deal
+	// ! with detaching containers, and then we get a tty after the container has
+	// ! started.
 	handler := newSignalHandler(r.enableSubreaper, r.notifySocket)
 	tty, err := setupIO(process, rootuid, rootgid, config.Terminal, detach, r.consoleSocket)
+	proce	logrus.Debug("haixiang::utils_linux.go get tty status. May be here get sth error.")
 	if err != nil {
 		r.destroy()
 		return -1, err
 	}
+	proce	logrus.Debug("haixiang::utils_linux.go get tty no error.")
 	defer tty.Close()
-
+	// ! 上面这行为啥要推迟
 	switch r.action {
 	case CT_ACT_CREATE:
 		err = r.container.Start(process)
 	case CT_ACT_RESTORE:
 		err = r.container.Restore(process, r.criuOpts)
+	// ! 上面的 r.criuOpts 输出看看
 	case CT_ACT_RUN:
 		err = r.container.Run(process)
 	default:
+		proce	logrus.Debug("haixiang::utils_linux.go r.action not in cases.")
 		panic("Unknown action")
 	}
 	if err != nil {
 		r.destroy()
 		return -1, err
 	}
+	proce	logrus.Debug("haixiang::utils_linux.go r.action successfully.")
 	if err := tty.waitConsole(); err != nil {
 		r.terminate(process)
 		r.destroy()
 		return -1, err
 	}
+	proce	logrus.Debug("haixiang::utils_linux.go tty.waitConsole() successfully.")
 	if err = tty.ClosePostStart(); err != nil {
 		r.terminate(process)
 		r.destroy()
 		return -1, err
 	}
+	proce	logrus.Debug("haixiang::utils_linux.go tty.ClosePostStart() successfully.")
 	if r.pidFile != "" {
 		if err = createPidFile(r.pidFile, process); err != nil {
 			r.terminate(process)
@@ -344,13 +358,16 @@ func (r *runner) run(config *specs.Process) (int, error) {
 			return -1, err
 		}
 	}
+	proce	logrus.Debug("haixiang::utils_linux.go check r.pidFile.")
 	status, err := handler.forward(process, tty, detach)
 	if err != nil {
 		r.terminate(process)
 	}
+	proce	logrus.Debug("haixiang::utils_linux.go handler.forward successfully.")
 	if detach {
 		return 0, nil
 	}
+	proce	logrus.Debug("haixiang::utils_linux.go handler.forward datach successfully.")
 	r.destroy()
 	return status, err
 }
@@ -403,20 +420,25 @@ const (
 )
 
 func startContainer(context *cli.Context, spec *specs.Spec, action CtAct, criuOpts *libcontainer.CriuOpts) (int, error) {
+	logrus.Debug("haixiang::utils_linux.go criuOpts How to print")
 	id := context.Args().First()
 	if id == "" {
 		return -1, errEmptyID
 	}
+	logrus.Debug("haixiang::utils_linux.go check id")
 
 	notifySocket := newNotifySocket(context, os.Getenv("NOTIFY_SOCKET"), id)
 	if notifySocket != nil {
 		notifySocket.setupSpec(context, spec)
 	}
+	logrus.Debug("haixiang::utils_linux.go check notifySocket")
+
 
 	container, err := createContainer(context, id, spec)
 	if err != nil {
 		return -1, err
 	}
+	logrus.Debug("haixiang::utils_linux.go check container")
 
 	if notifySocket != nil {
 		err := notifySocket.setupSocket()
@@ -424,12 +446,14 @@ func startContainer(context *cli.Context, spec *specs.Spec, action CtAct, criuOp
 			return -1, err
 		}
 	}
+	logrus.Debug("haixiang::utils_linux.go check notifySocket")
 
 	// Support on-demand socket activation by passing file descriptors into the container init process.
 	listenFDs := []*os.File{}
 	if os.Getenv("LISTEN_FDS") != "" {
 		listenFDs = activation.Files(false)
 	}
+	logrus.Debug("haixiang::utils_linux.go check listenFDs")
 	r := &runner{
 		enableSubreaper: !context.Bool("no-subreaper"),
 		shouldDestroy:   true,
