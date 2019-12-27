@@ -273,7 +273,7 @@ func (r *runner) run(config *specs.Process) (int, error) {
 		return -1, err
 	}
 	logrus.Debug("haixiang::utils_linux.go Terminal true")
-ss, err := newProcess(*config, r.init)
+	process, err := newProcess(*config, r.init)
 	if err != nil {
 		r.destroy()
 		return -1, err
