@@ -22,7 +22,7 @@ const signalBufferSize = 2048
 // If notifySocket is present, use it to read systemd notifications from the container and
 // forward them to notifySocketHost.
 func newSignalHandler(enableSubreaper bool, notifySocket *notifySocket) *signalHandler {
-	logrus.Debugf("warning::haixiang::signals.go::newSignalHandler enableSubreaper=%v; notifySocket=%v; detach=%v", enableSubreaper, notifySocket, detach)
+	logrus.Debugf("warning::haixiang::signals.go::newSignalHandler enableSubreaper=%v; notifySocket=%v", enableSubreaper, notifySocket)
 	if enableSubreaper {
 		// set us as the subreaper before registering the signal handler for the container
 		if err := system.SetSubreaper(1); err != nil {
