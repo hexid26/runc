@@ -22,6 +22,7 @@ const signalBufferSize = 2048
 // If notifySocket is present, use it to read systemd notifications from the container and
 // forward them to notifySocketHost.
 func newSignalHandler(enableSubreaper bool, notifySocket *notifySocket) *signalHandler {
+	logrus.Debugf("warning::haixiang::signals.go::newSignalHandler enableSubreaper=%v; notifySocket=%v; detach=%v", enableSubreaper, notifySocket, detach)
 	if enableSubreaper {
 		// set us as the subreaper before registering the signal handler for the container
 		if err := system.SetSubreaper(1); err != nil {
@@ -31,6 +32,7 @@ func newSignalHandler(enableSubreaper bool, notifySocket *notifySocket) *signalH
 	// ensure that we have a large buffer size so that we do not miss any signals
 	// in case we are not processing them fast enough.
 	s := make(chan os.Signal, signalBufferSize)
+	logrus.Debugf("warning::haixiang::signals.go::newSignalHandler s=%v", s)
 	// handle all signals for the process.
 	signal.Notify(s)
 	return &signalHandler{
@@ -56,8 +58,8 @@ type signalHandler struct {
 func (h *signalHandler) forward(process *libcontainer.Process, tty *tty, detach bool) (int, error) {
 	// make sure we know the pid of our main process so that we can return
 	// after it dies.
-	logrus.Debugf("haixiang::signals.go::forward process %v; tty %v; detach %v", process, tty, detach)
-	logrus.Debugf("haixiang::signals.go::forward h.signals %v; h.notifySocket %v", h.signals, h.notifySocket)
+	logrus.Debugf("warning::haixiang::signals.go::forward process=%v; tty=%v; detach=%v", process, tty, detach)
+	logrus.Debugf("warning::haixiang::signals.go::forward h.signals=%v; h.notifySocket=%v", h.signals, h.notifySocket)
 	if detach && h.notifySocket == nil {
 		return 0, nil
 	}
