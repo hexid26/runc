@@ -56,6 +56,8 @@ type signalHandler struct {
 func (h *signalHandler) forward(process *libcontainer.Process, tty *tty, detach bool) (int, error) {
 	// make sure we know the pid of our main process so that we can return
 	// after it dies.
+	logrus.Debugf("haixiang::signals.go::forward process %v; tty %v; detach %v", process, tty, detach)
+	logrus.Debugf("haixiang::signals.go::forward h.signals %v; h.notifySocket %v", h.signals, h.notifySocket)
 	if detach && h.notifySocket == nil {
 		return 0, nil
 	}

@@ -312,7 +312,7 @@ func (r *runner) run(config *specs.Process) (int, error) {
 	// ! Setting up IO is a two stage process. We need to modify process to deal
 	// ! with detaching containers, and then we get a tty after the container has
 	// ! started.
-	handler := newSignalHandler(r.enableSubreaper, r.notifySocket)
+	handler := newSignalHandler(r.enableSubreaper, r.notifySocket)  // ! 可能是 Signal 的问题
 	tty, err := setupIO(process, rootuid, rootgid, config.Terminal, detach, r.consoleSocket)
 	logrus.Debug("haixiang::utils_linux.go get tty status. May be here get sth error.")
 	if err != nil {
@@ -360,6 +360,7 @@ func (r *runner) run(config *specs.Process) (int, error) {
 	}
 	logrus.Debug("haixiang::utils_linux.go check r.pidFile.")
 	status, err := handler.forward(process, tty, detach)
+	// ! forward 之后就没有输出了
 	if err != nil {
 	logrus.Error("haixiang::utils_linux.go handler.forward failed.")
 		r.terminate(process)
