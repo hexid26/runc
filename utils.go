@@ -21,6 +21,7 @@ const (
 
 func checkArgs(context *cli.Context, expected, checkType int) error {
 	var err error
+	logrus.Debug("haixiang::utils.go checkArgs start")
 	cmdName := context.Command.Name
 	switch checkType {
 	case exactArgs:
@@ -42,6 +43,8 @@ func checkArgs(context *cli.Context, expected, checkType int) error {
 		cli.ShowCommandHelp(context, cmdName)
 		return err
 	}
+	fmt.Printf("haixiang::utils.go checkArgs end.\n\n")
+	logrus.Debug("haixiang::utils.go checkArgs end")
 	return nil
 }
 
