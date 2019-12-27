@@ -15,14 +15,16 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-const signalBufferSize = 2048
+const signalBufferSize = 204800
 
 // newSignalHandler returns a signal handler for processing SIGCHLD and SIGWINCH signals
 // while still forwarding all other signals to the process.
 // If notifySocket is present, use it to read systemd notifications from the container and
 // forward them to notifySocketHost.
+// * When a child process stops or terminates, SIGCHLD is sent to the parent process
+// * SIGWINCH is sent to the foreground process group when the terminal window size changes
+// * as vi and less.
 func newSignalHandler(enableSubreaper bool, notifySocket *notifySocket) *signalHandler {
-	logrus.Debugf("warning::haixiang::signals.go::newSignalHandler enableSubreaper=%v; notifySocket=%v", enableSubreaper, notifySocket)
 	if enableSubreaper {
 		// set us as the subreaper before registering the signal handler for the container
 		if err := system.SetSubreaper(1); err != nil {
@@ -35,6 +37,7 @@ func newSignalHandler(enableSubreaper bool, notifySocket *notifySocket) *signalH
 	logrus.Debugf("warning::haixiang::signals.go::newSignalHandler s=%v", s)
 	// handle all signals for the process.
 	signal.Notify(s)
+	logrus.Debugf("warning::haixiang::signals.go::newSignalHandler enableSubreaper=%v; notifySocket=%v", enableSubreaper, notifySocket)
 	return &signalHandler{
 		signals:      s,
 		notifySocket: notifySocket,
@@ -61,6 +64,7 @@ func (h *signalHandler) forward(process *libcontainer.Process, tty *tty, detach 
 	logrus.Debugf("warning::haixiang::signals.go::forward process=%v; tty=%v; detach=%v", process, tty, detach)
 	logrus.Debugf("warning::haixiang::signals.go::forward h.signals=%v; h.notifySocket=%v", h.signals, h.notifySocket)
 	if detach && h.notifySocket == nil {
+    logrus.Debugf("warning::haixiang::signals.go::forward h.notifySocket=%v", h.notifySocket)
 		return 0, nil
 	}
 
@@ -68,29 +72,36 @@ func (h *signalHandler) forward(process *libcontainer.Process, tty *tty, detach 
 	if err != nil {
 		return -1, err
 	}
+  logrus.Debugf("haixiang::signals.go::forward pid1=%v", pid1)
 
 	if h.notifySocket != nil {
 		if detach {
 			h.notifySocket.run(pid1)
 			return 0, nil
 		}
+    logrus.Debugf("warning::haixiang::signals.go::forward h.notifySocket=%v, ready for go thread", h.notifySocket)
 		go h.notifySocket.run(0)
 	}
 
-	// Perform the initial tty resize. Always ignore errors resizing because
-	// stdout might have disappeared (due to races with when SIGHUP is sent).
+  logrus.Debugf("warning::haixiang::signals.go::forward h.notifySocket=%v, Initial tty resize.", h.notifySocket)
+	// ! Perform the initial tty resize. Always ignore errors resizing because
+	// ! stdout might have disappeared (due to races with when SIGHUP is sent).
 	_ = tty.resize()
+  logrus.Debugf("warning::haixiang::signals.go::forward tty.resize=%v", tty.resize())
+  // ! 上面的函数干啥的？
 	// Handle and forward signals.
 	for s := range h.signals {
 		switch s {
 		case unix.SIGWINCH:
-			// Ignore errors resizing, as above.
+			// ! Ignore errors resizing, as above.
 			_ = tty.resize()
+      logrus.Debugf("warning::haixiang::signals.go::forward get SIGWINCH")
 		case unix.SIGCHLD:
 			exits, err := h.reap()
 			if err != nil {
 				logrus.Error(err)
 			}
+      logrus.Debugf("warning::haixiang::signals.go::forward exits=%v", exits)
 			for _, e := range exits {
 				logrus.WithFields(logrus.Fields{
 					"pid":    e.pid,
@@ -100,10 +111,13 @@ func (h *signalHandler) forward(process *libcontainer.Process, tty *tty, detach 
 					// call Wait() on the process even though we already have the exit
 					// status because we must ensure that any of the go specific process
 					// fun such as flushing pipes are complete before we return.
+          logrus.Debugf("warning::haixiang::signals.go::forward wait process=%v", process)
 					process.Wait()
 					if h.notifySocket != nil {
+            logrus.Debugf("warning::haixiang::signals.go::forward close notifySocket")
 						h.notifySocket.Close()
 					}
+          logrus.Debugf("warning::haixiang::signals.go::forward e.status=%v", e.status)
 					return e.status, nil
 				}
 			}

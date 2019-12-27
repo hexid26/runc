@@ -361,8 +361,9 @@ func (r *runner) run(config *specs.Process) (int, error) {
 	logrus.Debug("haixiang::utils_linux.go check r.pidFile.")
 	status, err := handler.forward(process, tty, detach)
 	// ! forward 之后就没有输出了
+  logrus.Debugf("haixiang::utils_linux.go handler.forward status=%v", status)
 	if err != nil {
-	logrus.Error("haixiang::utils_linux.go handler.forward failed.")
+	logrus.Debugf("haixiang::utils_linux.go handler.forward failed.")
 		r.terminate(process)
 	}
 	logrus.Debug("haixiang::utils_linux.go handler.forward successfully.")
