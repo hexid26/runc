@@ -272,18 +272,18 @@ func (r *runner) run(config *specs.Process) (int, error) {
 		r.destroy()
 		return -1, err
 	}
-	proce	logrus.Debug("haixiang::utils_linux.go Terminal true")
+	logrus.Debug("haixiang::utils_linux.go Terminal true")
 ss, err := newProcess(*config, r.init)
 	if err != nil {
 		r.destroy()
 		return -1, err
 	}
-	proce	logrus.Debug("haixiang::utils_linux.go err")
+	logrus.Debug("haixiang::utils_linux.go err")
 	if len(r.listenFDs) > 0 {
 		process.Env = append(process.Env, fmt.Sprintf("LISTEN_FDS=%d", len(r.listenFDs)), "LISTEN_PID=1")
 		process.ExtraFiles = append(process.ExtraFiles, r.listenFDs...)
 	}
-	proce	logrus.Debug("haixiang::utils_linux.go get Env ExtraFiles from listenFDs")
+	logrus.Debug("haixiang::utils_linux.go get Env ExtraFiles from listenFDs")
 	baseFd := 3 + len(process.ExtraFiles)
 	for i := baseFd; i < baseFd+r.preserveFDs; i++ {
 		_, err := os.Stat(fmt.Sprintf("/proc/self/fd/%d", i))
@@ -293,19 +293,19 @@ ss, err := newProcess(*config, r.init)
 		}
 		process.ExtraFiles = append(process.ExtraFiles, os.NewFile(uintptr(i), "PreserveFD:"+strconv.Itoa(i)))
 	}
-	proce	logrus.Debug("haixiang::utils_linux.go get create ExtraFiles successfully")
+	logrus.Debug("haixiang::utils_linux.go get create ExtraFiles successfully")
 	rootuid, err := r.container.Config().HostRootUID()
 	if err != nil {
 		r.destroy()
 		return -1, err
 	}
-	proce	logrus.Debug("haixiang::utils_linux.go get root uid successfully")
+	logrus.Debug("haixiang::utils_linux.go get root uid successfully")
 	rootgid, err := r.container.Config().HostRootGID()
 	if err != nil {
 		r.destroy()
 		return -1, err
 	}
-	proce	logrus.Debug("haixiang::utils_linux.go get root gid successfully")
+	logrus.Debug("haixiang::utils_linux.go get root gid successfully")
 	var (
 		detach = r.detach || (r.action == CT_ACT_CREATE)
 	)
@@ -314,12 +314,12 @@ ss, err := newProcess(*config, r.init)
 	// ! started.
 	handler := newSignalHandler(r.enableSubreaper, r.notifySocket)
 	tty, err := setupIO(process, rootuid, rootgid, config.Terminal, detach, r.consoleSocket)
-	proce	logrus.Debug("haixiang::utils_linux.go get tty status. May be here get sth error.")
+	logrus.Debug("haixiang::utils_linux.go get tty status. May be here get sth error.")
 	if err != nil {
 		r.destroy()
 		return -1, err
 	}
-	proce	logrus.Debug("haixiang::utils_linux.go get tty no error.")
+	logrus.Debug("haixiang::utils_linux.go get tty no error.")
 	defer tty.Close()
 	// ! 上面这行为啥要推迟
 	switch r.action {
@@ -331,26 +331,26 @@ ss, err := newProcess(*config, r.init)
 	case CT_ACT_RUN:
 		err = r.container.Run(process)
 	default:
-		proce	logrus.Debug("haixiang::utils_linux.go r.action not in cases.")
+		logrus.Debug("haixiang::utils_linux.go r.action not in cases.")
 		panic("Unknown action")
 	}
 	if err != nil {
 		r.destroy()
 		return -1, err
 	}
-	proce	logrus.Debug("haixiang::utils_linux.go r.action successfully.")
+	logrus.Debug("haixiang::utils_linux.go r.action successfully.")
 	if err := tty.waitConsole(); err != nil {
 		r.terminate(process)
 		r.destroy()
 		return -1, err
 	}
-	proce	logrus.Debug("haixiang::utils_linux.go tty.waitConsole() successfully.")
+	logrus.Debug("haixiang::utils_linux.go tty.waitConsole() successfully.")
 	if err = tty.ClosePostStart(); err != nil {
 		r.terminate(process)
 		r.destroy()
 		return -1, err
 	}
-	proce	logrus.Debug("haixiang::utils_linux.go tty.ClosePostStart() successfully.")
+	logrus.Debug("haixiang::utils_linux.go tty.ClosePostStart() successfully.")
 	if r.pidFile != "" {
 		if err = createPidFile(r.pidFile, process); err != nil {
 			r.terminate(process)
@@ -358,16 +358,16 @@ ss, err := newProcess(*config, r.init)
 			return -1, err
 		}
 	}
-	proce	logrus.Debug("haixiang::utils_linux.go check r.pidFile.")
+	logrus.Debug("haixiang::utils_linux.go check r.pidFile.")
 	status, err := handler.forward(process, tty, detach)
 	if err != nil {
 		r.terminate(process)
 	}
-	proce	logrus.Debug("haixiang::utils_linux.go handler.forward successfully.")
+	logrus.Debug("haixiang::utils_linux.go handler.forward successfully.")
 	if detach {
 		return 0, nil
 	}
-	proce	logrus.Debug("haixiang::utils_linux.go handler.forward datach successfully.")
+	logrus.Debug("haixiang::utils_linux.go handler.forward datach successfully.")
 	r.destroy()
 	return status, err
 }
