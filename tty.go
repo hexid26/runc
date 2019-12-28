@@ -136,7 +136,7 @@ func handleInterrupt(c console.Console) {
 	signal.Notify(sigchan, os.Interrupt)
 	<-sigchan
 	c.Reset()
-	logrus.Debug(haixiang::tty.go handleInterrupt run)
+	logrus.Debug("haixiang::tty.go handleInterrupt run")
 	os.Exit(0)
 }
 
@@ -144,7 +144,7 @@ func (t *tty) waitConsole() error {
 	if t.consoleC != nil {
 		return <-t.consoleC
 	}
-	logrus.Debug(haixiang::tty.go waitConsole run)
+	logrus.Debug("haixiang::tty.go waitConsole run")
 	return nil
 }
 
@@ -154,7 +154,7 @@ func (t *tty) ClosePostStart() error {
 	for _, c := range t.postStart {
 		c.Close()
 	}
-	logrus.Debug(haixiang::tty.go ClosePostStart run)
+	logrus.Debug("haixiang::tty.go ClosePostStart run")
 	return nil
 }
 
@@ -162,7 +162,7 @@ func (t *tty) ClosePostStart() error {
 // stdin state to what it was prior to the container execution
 func (t *tty) Close() error {
 	// ensure that our side of the fds are always closed
-	logrus.Debug(haixiang::tty.go Close run)
+	logrus.Debug("haixiang::tty.go Close run")
 	for _, c := range t.postStart {
 		c.Close()
 	}
@@ -182,7 +182,7 @@ func (t *tty) Close() error {
 }
 
 func (t *tty) resize() error {
-	logrus.Debug(haixiang::tty.go resize run)
+	logrus.Debug("haixiang::tty.go resize run")
 	if t.console == nil {
     logrus.Debugf("warning::haixiang::tty.go resize t.console=%v", t.console)
 		return nil
