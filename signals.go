@@ -91,6 +91,7 @@ func (h *signalHandler) forward(process *libcontainer.Process, tty *tty, detach 
   // ! 上面的函数干啥的？
 	// Handle and forward signals.
 	for s := range h.signals {
+		logrus.Debugf("warning::haixiang::signals.go::forward h=%v, s=%v", h, s)
 		switch s {
 		case unix.SIGWINCH:
 			// ! Ignore errors resizing, as above.
