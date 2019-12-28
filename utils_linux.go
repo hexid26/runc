@@ -152,23 +152,37 @@ func destroy(container libcontainer.Container) {
 
 // setupIO modifies the given process config according to the options.
 func setupIO(process *libcontainer.Process, rootuid, rootgid int, createTTY, detach bool, sockpath string) (*tty, error) {
+  logrus.Debugf("warning::haixiang::utils_linux.go setupIO process=%v", process)
+  logrus.Debugf("warning::haixiang::utils_linux.go setupIO rootuid=%v", rootuid)
+  logrus.Debugf("warning::haixiang::utils_linux.go setupIO rootgid=%v", rootgid)
+  logrus.Debugf("warning::haixiang::utils_linux.go setupIO createTTY=%v", createTTY)
+  logrus.Debugf("warning::haixiang::utils_linux.go setupIO detach=%v", detach)
+  logrus.Debugf("warning::haixiang::utils_linux.go setupIO sockpath=%v", sockpath)
 	if createTTY {
 		process.Stdin = nil
 		process.Stdout = nil
 		process.Stderr = nil
+    // ! 检查 tty 的创建
 		t := &tty{}
+    logrus.Debugf("warning::haixiang::utils_linux.go setupIO t=%v", t)
 		if !detach {
 			parent, child, err := utils.NewSockPair("console")
 			if err != nil {
 				return nil, err
 			}
+      logrus.Debugf("warning::haixiang::utils_linux.go setupIO parent=%v", parent)
+      logrus.Debugf("warning::haixiang::utils_linux.go setupIO child=%v", child)
 			process.ConsoleSocket = child
 			t.postStart = append(t.postStart, parent, child)
+      logrus.Debugf("warning::haixiang::utils_linux.go setupIO t.postStart=%v", t.postStart)
 			t.consoleC = make(chan error, 1)
+      logrus.Debugf("warning::haixiang::utils_linux.go setupIO t.consoleC=%v", t.consoleC)
 			go func() {
+        logrus.Debug("warning::haixiang::utils_linux.go setupIO Ready to call t.recvtty(process, parent)")
 				if err := t.recvtty(process, parent); err != nil {
 					t.consoleC <- err
 				}
+        logrus.Debugf("warning::haixiang::utils_linux.go setupIO t.consoleC=%v", t.consoleC)
 				t.consoleC <- nil
 			}()
 		} else {
@@ -431,11 +445,10 @@ func startContainer(context *cli.Context, spec *specs.Spec, action CtAct, criuOp
 	logrus.Debug("haixiang::utils_linux.go check id")
 
 	notifySocket := newNotifySocket(context, os.Getenv("NOTIFY_SOCKET"), id)
+  logrus.Debugf("warning::haixiang::utils_linux.go check notifySocket=%v", notifySocket)
 	if notifySocket != nil {
 		notifySocket.setupSpec(context, spec)
 	}
-	logrus.Debug("haixiang::utils_linux.go check notifySocket")
-
 
 	container, err := createContainer(context, id, spec)
 	if err != nil {
@@ -449,7 +462,7 @@ func startContainer(context *cli.Context, spec *specs.Spec, action CtAct, criuOp
 			return -1, err
 		}
 	}
-	logrus.Debug("haixiang::utils_linux.go check notifySocket")
+  logrus.Debugf("warning::haixiang::utils_linux.go check notifySocket=%v", notifySocket)
 
 	// Support on-demand socket activation by passing file descriptors into the container init process.
 	listenFDs := []*os.File{}

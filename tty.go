@@ -12,6 +12,7 @@ import (
 	"github.com/containerd/console"
 	"github.com/opencontainers/runc/libcontainer"
 	"github.com/opencontainers/runc/libcontainer/utils"
+	"github.com/sirupsen/logrus"
 )
 
 type tty struct {
@@ -27,6 +28,7 @@ type tty struct {
 func (t *tty) copyIO(w io.Writer, r io.ReadCloser) {
 	defer t.wg.Done()
 	io.Copy(w, r)
+  logrus.Debugf("warning::haixiang::tty.go copyIO w=%v r=%v", w, r)
 	r.Close()
 }
 
@@ -71,21 +73,26 @@ func inheritStdio(process *libcontainer.Process) error {
 	return nil
 }
 
+// ! 检查 tty
 func (t *tty) recvtty(process *libcontainer.Process, socket *os.File) (Err error) {
 	f, err := utils.RecvFd(socket)
+  logrus.Debugf("warning::haixiang::tty.go recvtty f=%v", f)
 	if err != nil {
 		return err
 	}
 	cons, err := console.ConsoleFromFile(f)
+  logrus.Debugf("warning::haixiang::tty.go recvtty cons=%v", cons)
 	if err != nil {
 		return err
 	}
 	console.ClearONLCR(cons.Fd())
 	epoller, err := console.NewEpoller()
+  logrus.Debugf("warning::haixiang::tty.go recvtty epoller=%v", epoller)
 	if err != nil {
 		return err
 	}
 	epollConsole, err := epoller.Add(cons)
+  logrus.Debugf("warning::haixiang::tty.go recvtty epollConsole=%v", epollConsole)
 	if err != nil {
 		return err
 	}
@@ -96,6 +103,7 @@ func (t *tty) recvtty(process *libcontainer.Process, socket *os.File) (Err error
 	}()
 	go epoller.Wait()
 	go io.Copy(epollConsole, os.Stdin)
+  logrus.Debugf("warning::haixiang::tty.go recvtty t.wg=%v Ready to exec t.wg.Add(1)", t.wg)
 	t.wg.Add(1)
 	go t.copyIO(os.Stdout, epollConsole)
 
@@ -164,6 +172,7 @@ func (t *tty) Close() error {
 
 func (t *tty) resize() error {
 	if t.console == nil {
+    logrus.Debugf("warning::haixiang::tty.go resize t.console=%v", t.console)
 		return nil
 	}
 	return t.console.ResizeFrom(console.Current())
