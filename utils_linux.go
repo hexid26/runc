@@ -178,11 +178,11 @@ func setupIO(process *libcontainer.Process, rootuid, rootgid int, createTTY, det
 			t.consoleC = make(chan error, 1)
       logrus.Debugf("warning::haixiang::utils_linux.go setupIO t.consoleC=%v", t.consoleC)
 			go func() {
-        logrus.Debug("warning::haixiang::utils_linux.go setupIO Ready to call t.recvtty(process, parent)")
+        logrus.Debug("haixiang::utils_linux.go setupIO go func call t.recvtty(process, parent)")
 				if err := t.recvtty(process, parent); err != nil {
 					t.consoleC <- err
 				}
-        logrus.Debugf("warning::haixiang::utils_linux.go setupIO t.consoleC=%v", t.consoleC)
+        logrus.Debugf("warning::haixiang::utils_linux.go setupIO go func t.consoleC=%v", t.consoleC)
 				t.consoleC <- nil
 			}()
 		} else {
@@ -327,8 +327,8 @@ func (r *runner) run(config *specs.Process) (int, error) {
 	// ! with detaching containers, and then we get a tty after the container has
 	// ! started.
 	handler := newSignalHandler(r.enableSubreaper, r.notifySocket)  // ! 可能是 Signal 的问题
+	logrus.Debug("haixiang::utils_linux.Ready to set tty. May be here get sth error.")
 	tty, err := setupIO(process, rootuid, rootgid, config.Terminal, detach, r.consoleSocket)
-	logrus.Debug("haixiang::utils_linux.go get tty status. May be here get sth error.")
 	if err != nil {
 		r.destroy()
 		return -1, err

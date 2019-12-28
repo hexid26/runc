@@ -36,6 +36,7 @@ func (t *tty) copyIO(w io.Writer, r io.ReadCloser) {
 // and restore the process's IO without depending on a host specific path or device
 func setupProcessPipes(p *libcontainer.Process, rootuid, rootgid int) (*tty, error) {
 	i, err := p.InitializeIO(rootuid, rootgid)
+	logrus.Debugf("warning::haixiang::tty.go setupProcessPipes i=%v", i)
 	if err != nil {
 		return nil, err
 	}
@@ -54,6 +55,7 @@ func setupProcessPipes(p *libcontainer.Process, rootuid, rootgid int) (*tty, err
 	} {
 		if c, ok := cc.(io.Closer); ok {
 			t.postStart = append(t.postStart, c)
+			logrus.Debugf("warning::haixiang::tty.go setupProcessPipes t.postStart=%v", t.postStart)
 		}
 	}
 	go func() {
@@ -61,7 +63,9 @@ func setupProcessPipes(p *libcontainer.Process, rootuid, rootgid int) (*tty, err
 		i.Stdin.Close()
 	}()
 	t.wg.Add(2)
+	logrus.Debugf("warning::haixiang::tty.go setupProcessPipes os.Stdout=%v", os.Stdout)
 	go t.copyIO(os.Stdout, i.Stdout)
+	logrus.Debugf("warning::haixiang::tty.go setupProcessPipes os.Stderr=%v", os.Stderr)
 	go t.copyIO(os.Stderr, i.Stderr)
 	return t, nil
 }
@@ -70,13 +74,14 @@ func inheritStdio(process *libcontainer.Process) error {
 	process.Stdin = os.Stdin
 	process.Stdout = os.Stdout
 	process.Stderr = os.Stderr
+	logrus.Debug("warning::haixiang::tty.go inheritStdio run")
 	return nil
 }
 
 // ! 检查 tty
 func (t *tty) recvtty(process *libcontainer.Process, socket *os.File) (Err error) {
 	f, err := utils.RecvFd(socket)
-  logrus.Debugf("warning::haixiang::tty.go recvtty f=%v", f)
+  logrus.Debugf("warning::haixiang::tty.go recvtty f=%v, socket=%v", f, socket)
 	if err != nil {
 		return err
 	}
@@ -109,10 +114,12 @@ func (t *tty) recvtty(process *libcontainer.Process, socket *os.File) (Err error
 
 	// set raw mode to stdin and also handle interrupt
 	stdin, err := console.ConsoleFromFile(os.Stdin)
+	logrus.Debugf("warning::haixiang::tty.go recvtty stdin=%v, err=%v", stdin, err)
 	if err != nil {
 		return err
 	}
 	if err := stdin.SetRaw(); err != nil {
+		logrus.Errorf("failed to set the terminal from the stdin: %v", err)
 		return fmt.Errorf("failed to set the terminal from the stdin: %v", err)
 	}
 	go handleInterrupt(stdin)
@@ -129,6 +136,7 @@ func handleInterrupt(c console.Console) {
 	signal.Notify(sigchan, os.Interrupt)
 	<-sigchan
 	c.Reset()
+	logrus.Debug(haixiang::tty.go handleInterrupt run)
 	os.Exit(0)
 }
 
@@ -136,6 +144,7 @@ func (t *tty) waitConsole() error {
 	if t.consoleC != nil {
 		return <-t.consoleC
 	}
+	logrus.Debug(haixiang::tty.go waitConsole run)
 	return nil
 }
 
@@ -145,6 +154,7 @@ func (t *tty) ClosePostStart() error {
 	for _, c := range t.postStart {
 		c.Close()
 	}
+	logrus.Debug(haixiang::tty.go ClosePostStart run)
 	return nil
 }
 
@@ -152,6 +162,7 @@ func (t *tty) ClosePostStart() error {
 // stdin state to what it was prior to the container execution
 func (t *tty) Close() error {
 	// ensure that our side of the fds are always closed
+	logrus.Debug(haixiang::tty.go Close run)
 	for _, c := range t.postStart {
 		c.Close()
 	}
@@ -171,6 +182,7 @@ func (t *tty) Close() error {
 }
 
 func (t *tty) resize() error {
+	logrus.Debug(haixiang::tty.go resize run)
 	if t.console == nil {
     logrus.Debugf("warning::haixiang::tty.go resize t.console=%v", t.console)
 		return nil
