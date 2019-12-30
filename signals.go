@@ -52,7 +52,7 @@ type exit struct {
 }
 
 type signalHandler struct {
-	signals      chan os.Signal
+	signals      chan os.Signal // ! 输出看看
 	notifySocket *notifySocket
 }
 
